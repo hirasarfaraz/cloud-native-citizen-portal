@@ -726,6 +726,9 @@ function initData() {
   if (!localStorage.getItem('services')) localStorage.setItem('services', JSON.stringify([]));
 }
 
+const API_URL = "http://localhost:5001/api";
+
+let token = localStorage.getItem("token") || "";
 let currentUser = null;
 
 // ── AUTH ──
@@ -734,40 +737,88 @@ function toggleForm() {
   document.getElementById('registerForm').style.display = document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
 }
 
-function login() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  
-  if (!email || !password) { alert('Please fill all fields'); return; }
-  
-  const users = JSON.parse(localStorage.getItem('users'));
-  if (users[email] && users[email].password === password) {
-    currentUser = { email, ...users[email] };
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    goPage('dashboard');
-    renderFeatures();
-    updateDashboard();
-  } else {
-    alert('Invalid credentials');
-  }
+async function login() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Invalid email or password");
+            return;
+        }
+
+        token = data.token;
+        localStorage.setItem("token", token);
+
+        currentUser = data.user;
+
+        goPage("dashboard");
+        renderFeatures();
+        updateDashboard();
+
+    } catch (error) {
+        console.error(error);
+        alert("Cannot connect to the backend.");
+    }
 }
 
-function register() {
-  const name = document.getElementById('regName').value.trim();
-  const cnic = document.getElementById('regCNIC').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-  
-  if (!name || !cnic || !email || !password) { alert('Please fill all fields'); return; }
-  
-  const users = JSON.parse(localStorage.getItem('users'));
-  if (users[email]) { alert('Email already registered'); return; }
-  
-  users[email] = { name, cnic, password, isAdmin: false };
-  localStorage.setItem('users', JSON.stringify(users));
-  alert('✅ Registration successful! Please login.');
-  toggleForm();
-  document.getElementById('loginEmail').focus();
+async function register() {
+    const name = document.getElementById("regName").value.trim();
+    const cnic = document.getElementById("regCNIC").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+
+    if (!name || !cnic || !email || !password) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                cnic,
+                email,
+                password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Registration failed");
+            return;
+        }
+
+        alert("Registration successful! Please login.");
+        toggleForm();
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot connect to backend.");
+    }
 }
 
 function logout() {
@@ -854,114 +905,207 @@ function renderDetail() {
 }
 
 // ── COMPLAINTS ──
-function submitComplaint() {
-  const category = document.getElementById('complaintCategory').value;
-  const title = document.getElementById('complaintTitle').value.trim();
-  const desc = document.getElementById('complaintDesc').value.trim();
-  const location = document.getElementById('complaintLocation').value.trim();
-  
-  if (category === 'Select Category' || !title || !desc) { alert('Please fill all fields'); return; }
-  
-  const complaint = {
-    id: Date.now(),
-    user: currentUser.email,
-    userName: currentUser.name,
-    category, title, desc, location,
-    status: 'Pending',
-    date: new Date().toLocaleDateString()
-  };
-  
-  const complaints = JSON.parse(localStorage.getItem('complaints'));
-  complaints.push(complaint);
-  localStorage.setItem('complaints', JSON.stringify(complaints));
-  
-  alert('✅ Complaint submitted successfully!');
-  document.getElementById('complaintCategory').value = 'Select Category';
-  document.getElementById('complaintTitle').value = '';
-  document.getElementById('complaintDesc').value = '';
-  document.getElementById('complaintLocation').value = '';
-  loadComplaints();
-  updateDashboard();
+async function submitComplaint() {
+    const category = document.getElementById("complaintCategory").value;
+    const title = document.getElementById("complaintTitle").value.trim();
+    const description = document.getElementById("complaintDesc").value.trim();
+    const location = document.getElementById("complaintLocation").value.trim();
+
+    if (category === "Select Category" || !title || !description || !location) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/complaints`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                category,
+                title,
+                description,
+                location,
+                user: currentUser
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to submit complaint");
+            return;
+        }
+
+        alert("Complaint submitted successfully!");
+
+        document.getElementById("complaintCategory").value = "Select Category";
+        document.getElementById("complaintTitle").value = "";
+        document.getElementById("complaintDesc").value = "";
+        document.getElementById("complaintLocation").value = "";
+
+        loadComplaints();
+        updateDashboard();
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot connect to backend.");
+    }
 }
 
-function loadComplaints() {
-  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
-  const html = complaints.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No complaints filed yet</p>' :
-    complaints.map(c => `
-      <div class="card-item">
-        <div class="card-content">
-          <div class="card-type">${c.category}</div>
-          <div class="card-title">${c.title}</div>
-          <div class="card-meta">${c.location} • ${c.date}</div>
-        </div>
-        <span class="status-badge status-${c.status.toLowerCase()}">${c.status}</span>
-      </div>
-    `).join('');
-  document.getElementById('complaintsList').innerHTML = html;
+async function loadComplaints() {
+    try {
+        const response = await fetch(`${API_URL}/complaints`);
+
+        const complaints = await response.json();
+
+        const html = complaints.length === 0
+            ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No complaints found</p>'
+            : complaints.map(c => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-type">${c.category}</div>
+                        <div class="card-title">${c.title}</div>
+                        <div class="card-meta">${c.location} • ${new Date(c.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <span class="status-badge">${c.status}</span>
+                </div>
+            `).join("");
+
+        document.getElementById("complaintsList").innerHTML = html;
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot load complaints.");
+    }
 }
 
 // ── SERVICES ──
-function submitService() {
-  const type = document.getElementById('serviceType').value;
-  const purpose = document.getElementById('servicePurpose').value.trim();
-  const priority = document.getElementById('servicePriority').value;
-  
-  if (type === 'Select Service' || !purpose) { alert('Please fill all fields'); return; }
-  
-  const service = {
-    id: Date.now(),
-    user: currentUser.email,
-    userName: currentUser.name,
-    type, purpose, priority,
-    status: 'Submitted',
-    date: new Date().toLocaleDateString()
-  };
-  
-  const services = JSON.parse(localStorage.getItem('services'));
-  services.push(service);
-  localStorage.setItem('services', JSON.stringify(services));
-  
-  alert('✅ Application submitted successfully!');
-  document.getElementById('serviceType').value = 'Select Service';
-  document.getElementById('servicePurpose').value = '';
-  loadServices();
-  updateDashboard();
+async function submitService() {
+    const type = document.getElementById("serviceType").value;
+    const purpose = document.getElementById("servicePurpose").value.trim();
+    const priority = document.getElementById("servicePriority").value;
+
+    if (type === "Select Service" || !purpose) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/services`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                type,
+                purpose,
+                priority,
+                user: currentUser
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to submit application");
+            return;
+        }
+
+        alert("Application submitted successfully!");
+
+        document.getElementById("serviceType").value = "Select Service";
+        document.getElementById("servicePurpose").value = "";
+
+        loadServices();
+        updateDashboard();
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot connect to backend.");
+    }
 }
 
-function loadServices() {
-  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
-  const html = services.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No applications yet</p>' :
-    services.map(s => `
-      <div class="card-item">
-        <div class="card-content">
-          <div class="card-type">${s.type}</div>
-          <div class="card-title">${s.purpose}</div>
-          <div class="card-meta">Priority: ${s.priority} • ${s.date}</div>
-        </div>
-        <span class="status-badge status-approved">${s.status}</span>
-      </div>
-    `).join('');
-  document.getElementById('servicesList').innerHTML = html;
+async function loadServices() {
+    try {
+        const response = await fetch(`${API_URL}/services`);
+
+        const services = await response.json();
+
+        const html = services.length === 0
+            ? '<p style="color: var(--muted); padding:2rem;text-align:center;">No applications found</p>'
+            : services.map(service => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-type">${service.type}</div>
+                        <div class="card-title">${service.purpose}</div>
+                        <div class="card-meta">
+                            Priority: ${service.priority} •
+                            ${new Date(service.createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
+
+                    <span class="status-badge">
+                        ${service.status}
+                    </span>
+                </div>
+            `).join("");
+
+        document.getElementById("servicesList").innerHTML = html;
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot load services.");
+    }
 }
 
 // ── TRACKING ──
-function loadTracking() {
-  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
-  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
-  const all = [...complaints.map(c => ({...c, type: 'complaint'})), ...services.map(s => ({...s, type: 'service'}))].sort((a, b) => b.id - a.id);
-  
-  const html = all.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No submissions to track</p>' :
-    all.map(item => `
-      <div class="card-item">
-        <div class="card-content">
-          <div class="card-type">${item.type === 'complaint' ? item.category : item.type}</div>
-          <div class="card-title">${item.type === 'complaint' ? item.title : item.purpose}</div>
-          <div class="card-meta">${item.date}</div>
-        </div>
-        <span class="status-badge status-${item.status.toLowerCase().replace(' ', '-')}" style="background: ${item.status === 'Pending' || item.status === 'Submitted' ? 'rgba(255,209,102,0.15)' : 'rgba(0,201,123,0.15)'}; color: ${item.status === 'Pending' || item.status === 'Submitted' ? 'var(--gold)' : 'var(--green)'};">${item.status}</span>
-      </div>
-    `).join('');
-  document.getElementById('trackingList').innerHTML = html;
+async function loadTracking() {
+    try {
+        const complaintRes = await fetch(`${API_URL}/complaints`);
+        const serviceRes = await fetch(`${API_URL}/services`);
+
+        const complaints = await complaintRes.json();
+        const services = await serviceRes.json();
+
+        const all = [
+            ...complaints.map(c => ({
+                ...c,
+                itemType: "Complaint",
+                title: c.title
+            })),
+            ...services.map(s => ({
+                ...s,
+                itemType: "Service",
+                title: s.purpose
+            }))
+        ];
+
+        const html = all.length === 0
+            ? '<p style="color: var(--muted); padding:2rem; text-align:center;">No records found.</p>'
+            : all.map(item => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-type">${item.itemType}</div>
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-meta">
+                            ${new Date(item.createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
+
+                    <span class="status-badge">
+                        ${item.status}
+                    </span>
+                </div>
+            `).join("");
+
+        document.getElementById("trackingList").innerHTML = html;
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot load tracking.");
+    }
 }
 
 // ── FEEDBACK ──
@@ -978,42 +1122,53 @@ function submitFeedback() {
 }
 
 // ── DASHBOARD ──
-function updateDashboard() {
-  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
-  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
-  
-  document.getElementById('totalComplaints').innerText = complaints.length;
-  document.getElementById('totalApps').innerText = services.length;
-  document.getElementById('pendingCount').innerText = 
-    complaints.filter(c => c.status === 'Pending').length + 
-    services.filter(s => s.status === 'Submitted').length;
-  document.getElementById('approvedCount').innerText = 
-    complaints.filter(c => c.status === 'Resolved').length + 
-    services.filter(s => s.status === 'Approved').length;
-  
-  const recentComp = complaints.slice(-3).reverse().map(c => `
-    <div class="card-item">
-      <div class="card-content">
-        <div class="card-type">${c.category}</div>
-        <div class="card-title">${c.title}</div>
-      </div>
-      <span class="status-badge status-${c.status.toLowerCase()}">${c.status}</span>
-    </div>
-  `).join('') || '<p style="color: var(--muted); padding: 1rem 0;">No complaints yet</p>';
-  document.getElementById('recentComplaints').innerHTML = recentComp;
-  
-  const recentSvc = services.slice(-3).reverse().map(s => `
-    <div class="card-item">
-      <div class="card-content">
-        <div class="card-type">${s.type}</div>
-        <div class="card-title">${s.purpose}</div>
-      </div>
-      <span class="status-badge status-approved">${s.status}</span>
-    </div>
-  `).join('') || '<p style="color: var(--muted); padding: 1rem 0;">No applications yet</p>';
-  document.getElementById('recentServices').innerHTML = recentSvc;
-  
-  document.getElementById('currentUser').innerText = currentUser.name;
+async function updateDashboard() {
+    try {
+        const complaintRes = await fetch(`${API_URL}/complaints`);
+        const serviceRes = await fetch(`${API_URL}/services`);
+
+        const complaints = await complaintRes.json();
+        const services = await serviceRes.json();
+
+        document.getElementById("totalComplaints").innerText = complaints.length;
+        document.getElementById("totalApps").innerText = services.length;
+
+        document.getElementById("pendingCount").innerText =
+            complaints.filter(c => c.status === "Pending").length +
+            services.filter(s => s.status === "Submitted").length;
+
+        document.getElementById("approvedCount").innerText =
+            complaints.filter(c => c.status === "Resolved").length +
+            services.filter(s => s.status === "Approved").length;
+
+        document.getElementById("recentComplaints").innerHTML =
+            complaints.slice(0, 3).map(c => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-type">${c.category}</div>
+                        <div class="card-title">${c.title}</div>
+                    </div>
+                    <span class="status-badge">${c.status}</span>
+                </div>
+            `).join("");
+
+        document.getElementById("recentServices").innerHTML =
+            services.slice(0, 3).map(s => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-type">${s.type}</div>
+                        <div class="card-title">${s.purpose}</div>
+                    </div>
+                    <span class="status-badge">${s.status}</span>
+                </div>
+            `).join("");
+
+        document.getElementById("currentUser").innerText = currentUser.name;
+
+    } catch (err) {
+        console.error(err);
+        alert("Cannot load dashboard.");
+    }
 }
 
 // ── INIT ──

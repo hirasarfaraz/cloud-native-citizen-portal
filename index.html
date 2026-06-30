@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pakistan Citizen Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    :root {
+      --green: #00C97B;
+      --green-dark: #00A362;
+      --emerald: #003D2E;
+      --gold: #FFD166;
+      --sky: #06B6D4;
+      --violet: #8B5CF6;
+      --rose: #F43F5E;
+      --orange: #F97316;
+      --bg: #060F0B;
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.1);
+      --text: #F0FDF4;
+      --muted: rgba(240,253,244,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(0,201,123,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 60% 10%, rgba(139,92,246,0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page { display: none; position: relative; z-index: 1; }
+    .page.active { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: rgba(6,15,11,0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 1rem; }
+    .logo { font-size: 24px; }
+    .portal-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .nav-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); 
+      padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
+      transition: all 0.2s; }
+    .nav-btn:hover { background: var(--surface2); border-color: var(--green); }
+    .user-info { font-size: 12px; color: var(--muted); }
+
+    /* ── CONTAINER ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+    /* ── AUTH ── */
+    .auth-container { max-width: 420px; margin: 100px auto; }
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+    }
+    .auth-logo { font-size: 48px; text-align: center; margin-bottom: 1rem; }
+    .auth-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 0.5rem; }
+    .auth-desc { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1.2rem; text-align: left; }
+    .form-label { font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; }
+    .form-input, .form-select {
+      width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus { outline: none; border-color: var(--green); }
+    .btn {
+      width: 100%; padding: 10px 16px; background: linear-gradient(135deg, var(--green), var(--sky));
+      color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+      transition: transform 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-secondary { background: var(--surface); color: var(--text); }
+    .btn-secondary:hover { background: var(--surface2); }
+    .toggle-link { font-size: 12px; color: var(--muted); margin-top: 1.5rem; text-align: center; }
+    .toggle-link a { color: var(--green); cursor: pointer; font-weight: 600; }
+
+    /* ── HEADER ── */
+    .header {
+      margin-bottom: 3rem;
+      animation: fadeUp 0.7s ease both;
+    }
+    .header-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .logo-wrap {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, var(--green), var(--sky));
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      box-shadow: 0 0 30px rgba(0,201,123,0.4);
+    }
+    .header-text h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(22px, 4vw, 30px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-text p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .badge {
+      font-size: 11px; font-weight: 600; padding: 4px 12px;
+      border-radius: 99px; letter-spacing: 0.04em;
+    }
+    .badge-green { background: rgba(0,201,123,0.15); color: var(--green); border: 1px solid rgba(0,201,123,0.3); }
+    .badge-violet { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
+    .badge-gold { background: rgba(255,209,102,0.12); color: var(--gold); border: 1px solid rgba(255,209,102,0.3); }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); border-color: var(--green); }
+    .stat-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(0,201,123,0.05), transparent);
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .stat-card:hover::before { opacity: 1; }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px; font-weight: 800;
+      background: linear-gradient(135deg, var(--green), var(--sky));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: linear-gradient(to right, rgba(0,201,123,0.3), transparent);
+    }
+
+    /* ── FEATURE GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 10px; margin-bottom: 2rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      opacity: 0; transition: opacity 0.25s;
+      border-radius: inherit;
+    }
+    .feature-card:hover { transform: translateY(-4px) scale(1.02); border-color: rgba(255,255,255,0.25); }
+    .feature-card:hover::before { opacity: 1; }
+
+    .theme-0 { --c: #00C97B; } .theme-0::before { background: radial-gradient(circle at top left, rgba(0,201,123,0.12), transparent 70%); }
+    .theme-1 { --c: #F43F5E; } .theme-1::before { background: radial-gradient(circle at top left, rgba(244,63,94,0.12), transparent 70%); }
+    .theme-2 { --c: #06B6D4; } .theme-2::before { background: radial-gradient(circle at top left, rgba(6,182,212,0.12), transparent 70%); }
+    .theme-3 { --c: #8B5CF6; } .theme-3::before { background: radial-gradient(circle at top left, rgba(139,92,246,0.12), transparent 70%); }
+    .theme-4 { --c: #FFD166; } .theme-4::before { background: radial-gradient(circle at top left, rgba(255,209,102,0.12), transparent 70%); }
+    .theme-5 { --c: #F97316; } .theme-5::before { background: radial-gradient(circle at top left, rgba(249,115,22,0.12), transparent 70%); }
+    .theme-6 { --c: #EC4899; } .theme-6::before { background: radial-gradient(circle at top left, rgba(236,72,153,0.12), transparent 70%); }
+    .theme-7 { --c: #14B8A6; } .theme-7::before { background: radial-gradient(circle at top left, rgba(20,184,166,0.12), transparent 70%); }
+    .theme-8 { --c: #A78BFA; } .theme-8::before { background: radial-gradient(circle at top left, rgba(167,139,250,0.12), transparent 70%); }
+    .theme-9 { --c: #FB923C; } .theme-9::before { background: radial-gradient(circle at top left, rgba(251,146,60,0.12), transparent 70%); }
+
+    .feature-card.active {
+      transform: translateY(-4px) scale(1.02);
+      border-color: var(--c) !important;
+      background: color-mix(in srgb, var(--c) 10%, transparent);
+    }
+    .feature-card.active::before { opacity: 1; }
+
+    .card-icon-wrap {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin-bottom: 10px;
+      background: color-mix(in srgb, var(--c) 20%, transparent);
+      color: var(--c);
+      transition: box-shadow 0.25s;
+    }
+    .feature-card:hover .card-icon-wrap,
+    .feature-card.active .card-icon-wrap {
+      box-shadow: 0 0 16px color-mix(in srgb, var(--c) 50%, transparent);
+    }
+    .card-title { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+    .card-count { font-size: 11px; color: var(--muted); }
+
+    /* ── DETAIL PANEL ── */
+    .detail-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2.5rem;
+      min-height: 160px;
+      transition: border-color 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .detail-panel.has-content { border-color: color-mix(in srgb, var(--active-c, var(--green)) 40%, transparent); }
+    .detail-panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(to right, var(--active-c, var(--green)), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .detail-panel.has-content::before { opacity: 1; }
+
+    .detail-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 1.25rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-icon-wrap {
+      width: 42px; height: 42px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .detail-title-text { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+    .detail-count-pill {
+      margin-left: auto; font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 99px;
+    }
+
+    .sub-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 8px; }
+    .sub-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      font-size: 13px; color: rgba(240,253,244,0.75);
+      line-height: 1.4; padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px; border: 1px solid var(--border);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .sub-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+    .sub-item i { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+
+    .empty-state {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--muted); font-size: 14px;
+      padding: 1.5rem 0;
+    }
+    .empty-state i { font-size: 22px; opacity: 0.5; }
+
+    /* ── EXTRAS ── */
+    .extras-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 2.5rem;
+    }
+    .extra-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.2rem;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 500; color: var(--text);
+      transition: all 0.2s;
+      cursor: default;
+    }
+    .extra-card:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
+    .extra-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer span { color: var(--green); font-weight: 600; }
+
+    /* ── FORMS ── */
+    .form-container { max-width: 600px; }
+    .form-section { 
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-section-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+      margin-bottom: 1rem; }
+    .btn-group { display: flex; gap: 1rem; margin-top: 1.5rem; }
+    .btn-group .btn { flex: 1; }
+
+    /* ── CARDS LIST ── */
+    .cards-list { display: grid; gap: 12px; }
+    .card-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .card-item:hover { border-color: var(--green); background: var(--surface2); }
+    .card-content { flex: 1; }
+    .card-type { font-size: 11px; color: var(--green); font-weight: 600; text-transform: uppercase; }
+    .status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    }
+    .status-pending { background: rgba(255,209,102,0.15); color: var(--gold); }
+    .status-approved { background: rgba(0,201,123,0.15); color: var(--green); }
+
+    /* ── ADMIN ── */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .admin-table th {
+      background: var(--surface);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-table tr:hover { background: var(--surface2); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .grid .feature-card { animation: fadeUp 0.5s ease both; }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .extras-grid { grid-template-columns: 1fr 1fr; }
+      .header-top { gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar" id="navbar" style="display: none;">
+  <div class="nav-left">
+    <div class="logo">🇵🇰</div>
+    <div class="portal-name">Pakistan Citizen Portal</div>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="goPage('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="nav-btn" onclick="goPage('features')"><i class="ti ti-folder"></i> Modules</button>
+    <div class="user-info">👤 <span id="currentUser"></span></div>
+    <button class="nav-btn btn-secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- LOGIN PAGE -->
+<div class="page active" id="loginPage">
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-logo">🇵🇰</div>
+      <div class="auth-title">Pakistan Citizen Portal</div>
+      <div class="auth-desc">e-Governance Platform · Digital Services</div>
+
+      <div id="loginForm">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="login()"><i class="ti ti-login-2"></i> Login</button>
+        <div class="toggle-link">Don't have account? <a onclick="toggleForm()">Register here</a></div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); text-align: center;">
+          <strong>Demo Accounts:</strong><br>
+          Admin: admin@pakistan.gov / admin123<br>
+          User: user@example.com / user123
+        </div>
+      </div>
+
+      <div id="registerForm" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="regName" placeholder="Your Full Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CNIC</label>
+          <input type="text" class="form-input" id="regCNIC" placeholder="XXXXX-XXXXXXX-X">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="regEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="regPassword" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="register()"><i class="ti ti-user-plus"></i> Register</button>
+        <div class="toggle-link">Already have account? <a onclick="toggleForm()">Login here</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="dashboardPage">
+  <div class="container">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo-wrap">🇵🇰</div>
+        <div class="header-text">
+          <h1>Welcome to Pakistan Citizen Portal</h1>
+          <p>e-Governance Platform · Digital Services for Every Citizen</p>
+          <div class="badge-row">
+            <span class="badge badge-green">Complaints</span>
+            <span class="badge badge-violet">Services</span>
+            <span class="badge badge-gold">Tracking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="totalComplaints">0</div><div class="stat-lbl">Total Complaints</div></div>
+      <div class="stat-card"><div class="stat-num" id="totalApps">0</div><div class="stat-lbl">Service Apps</div></div>
+      <div class="stat-card"><div class="stat-num" id="pendingCount">0</div><div class="stat-lbl">Pending</div></div>
+      <div class="stat-card"><div class="stat-num" id="approvedCount">0</div><div class="stat-lbl">Completed</div></div>
+    </div>
+
+    <div class="section-label">Quick Actions</div>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 2rem;">
+      <div class="feature-card theme-1" style="cursor: pointer;" onclick="goPage('complaints')">
+        <div class="card-icon-wrap"><i class="ti ti-message-report"></i></div>
+        <div class="card-title">Submit Complaint</div>
+        <div class="card-count">File now</div>
+      </div>
+      <div class="feature-card theme-2" style="cursor: pointer;" onclick="goPage('services')">
+        <div class="card-icon-wrap"><i class="ti ti-file-certificate"></i></div>
+        <div class="card-title">Apply Service</div>
+        <div class="card-count">Get certified</div>
+      </div>
+      <div class="feature-card theme-3" style="cursor: pointer;" onclick="goPage('tracking')">
+        <div class="card-icon-wrap"><i class="ti ti-map-pin"></i></div>
+        <div class="card-title">Track Status</div>
+        <div class="card-count">Real-time</div>
+      </div>
+      <div class="feature-card theme-4" style="cursor: pointer;" onclick="goPage('feedback')">
+        <div class="card-icon-wrap"><i class="ti ti-star"></i></div>
+        <div class="card-title">Give Feedback</div>
+        <div class="card-count">Help improve</div>
+      </div>
+    </div>
+
+    <div class="section-label">Recent Complaints</div>
+    <div class="cards-list" id="recentComplaints"></div>
+
+    <div class="section-label">Service Applications</div>
+    <div class="cards-list" id="recentServices"></div>
+  </div>
+</div>
+
+<!-- FEATURES PAGE (Original Dashboard) -->
+<div class="page" id="featuresPage">
+  <div class="container">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo-wrap">🇵🇰</div>
+        <div class="header-text">
+          <h1>Pakistan Citizen Portal</h1>
+          <p>e-Governance Platform · Digital Services for Every Citizen</p>
+          <div class="badge-row">
+            <span class="badge badge-green">10 Core Modules</span>
+            <span class="badge badge-violet">3 Additional Features</span>
+            <span class="badge badge-gold">45+ Sub-features</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num">10</div><div class="stat-lbl">Core Modules</div></div>
+      <div class="stat-card"><div class="stat-num">45+</div><div class="stat-lbl">Sub-features</div></div>
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-lbl">Document Types</div></div>
+      <div class="stat-card"><div class="stat-num">3</div><div class="stat-lbl">User Roles</div></div>
+    </div>
+
+    <div class="section-label">Core Modules — click to explore</div>
+    <div class="grid" id="feature-grid"></div>
+
+    <div class="detail-panel" id="detail-panel">
+      <div class="empty-state">
+        <i class="ti ti-hand-click"></i>
+        Select any module above to explore its features
+      </div>
+    </div>
+
+    <div class="section-label">Additional Features</div>
+    <div class="extras-grid">
+      <div class="extra-card">
+        <div class="extra-icon" style="background:rgba(0,201,123,0.15);color:#00C97B;"><i class="ti ti-credit-card"></i></div>
+        Online Payment System
+      </div>
+      <div class="extra-card">
+        <div class="extra-icon" style="background:rgba(6,182,212,0.15);color:#06B6D4;"><i class="ti ti-world"></i></div>
+        Multi-Language Support
+      </div>
+      <div class="extra-card">
+        <div class="extra-icon" style="background:rgba(244,63,94,0.15);color:#F43F5E;"><i class="ti ti-alert-triangle"></i></div>
+        Emergency Announcements
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Pakistan</span> Citizen Portal · e-Governance Feature Overview
+    </div>
+  </div>
+</div>
+
+<!-- COMPLAINTS PAGE -->
+<div class="page" id="complaintsPage">
+  <div class="container">
+    <h1 style="font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 1.5rem;">Complaint Management</h1>
+
+    <div class="form-container">
+      <div class="form-section">
+        <div class="form-section-title">Submit New Complaint</div>
+        
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="complaintCategory">
+            <option>Select Category</option>
+            <option>Water Supply</option>
+            <option>Electricity</option>
+            <option>Roads & Infrastructure</option>
+            <option>Garbage Collection</option>
+            <option>Public Health</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="complaintTitle" placeholder="Brief title of complaint">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" id="complaintDesc" placeholder="Describe your complaint in detail..." style="height: 100px; resize: vertical;"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input type="text" class="form-input" id="complaintLocation" placeholder="Area/Address/City">
+        </div>
+
+        <button class="btn" onclick="submitComplaint()" style="margin-top: 1rem;">
+          <i class="ti ti-send"></i> Submit Complaint
+        </button>
+      </div>
+    </div>
+
+    <div class="section-label">Your Complaints</div>
+    <div class="cards-list" id="complaintsList"></div>
+  </div>
+</div>
+
+<!-- SERVICES PAGE -->
+<div class="page" id="servicesPage">
+  <div class="container">
+    <h1 style="font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 1.5rem;">Service Applications</h1>
+
+    <div class="form-container">
+      <div class="form-section">
+        <div class="form-section-title">Apply for Service</div>
+        
+        <div class="form-group">
+          <label class="form-label">Service Type</label>
+          <select class="form-select" id="serviceType">
+            <option>Select Service</option>
+            <option>Domicile Certificate</option>
+            <option>Birth Certificate</option>
+            <option>Death Certificate</option>
+            <option>Marriage Certificate</option>
+            <option>Driving License</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Purpose/Reason</label>
+          <input type="text" class="form-input" id="servicePurpose" placeholder="Why do you need this service?">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="servicePriority">
+            <option>Normal</option>
+            <option>Urgent</option>
+          </select>
+        </div>
+
+        <button class="btn" onclick="submitService()" style="margin-top: 1rem;">
+          <i class="ti ti-file-plus"></i> Apply Now
+        </button>
+      </div>
+    </div>
+
+    <div class="section-label">Your Applications</div>
+    <div class="cards-list" id="servicesList"></div>
+  </div>
+</div>
+
+<!-- TRACKING PAGE -->
+<div class="page" id="trackingPage">
+  <div class="container">
+    <h1 style="font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 1.5rem;">Track Your Applications</h1>
+    <div class="cards-list" id="trackingList"></div>
+  </div>
+</div>
+
+<!-- FEEDBACK PAGE -->
+<div class="page" id="feedbackPage">
+  <div class="container">
+    <h1 style="font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 1.5rem;">Give Feedback</h1>
+    <div class="form-container">
+      <div class="form-section">
+        <div class="form-section-title">Share Your Feedback</div>
+        <div class="form-group">
+          <label class="form-label">Rating (1-5 stars)</label>
+          <input type="number" class="form-input" id="feedbackRating" min="1" max="5" placeholder="Rate us">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Feedback</label>
+          <textarea class="form-input" id="feedbackText" placeholder="Tell us how we can improve..." style="height: 100px;"></textarea>
+        </div>
+        <button class="btn" onclick="submitFeedback()">Submit Feedback</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── INIT DATA ──
+function initData() {
+  if (!localStorage.getItem('users')) {
+    localStorage.setItem('users', JSON.stringify({
+      'admin@pakistan.gov': { name: 'Admin Officer', cnic: '123', password: 'admin123', isAdmin: true },
+      'user@example.com': { name: 'Ahmed Khan', cnic: '12345-1234567-1', password: 'user123', isAdmin: false }
+    }));
+  }
+  if (!localStorage.getItem('complaints')) localStorage.setItem('complaints', JSON.stringify([]));
+  if (!localStorage.getItem('services')) localStorage.setItem('services', JSON.stringify([]));
+}
+
+let currentUser = null;
+
+// ── AUTH ──
+function toggleForm() {
+  document.getElementById('loginForm').style.display = document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
+}
+
+function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) { alert('Please fill all fields'); return; }
+  
+  const users = JSON.parse(localStorage.getItem('users'));
+  if (users[email] && users[email].password === password) {
+    currentUser = { email, ...users[email] };
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    goPage('dashboard');
+    renderFeatures();
+    updateDashboard();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+
+function register() {
+  const name = document.getElementById('regName').value.trim();
+  const cnic = document.getElementById('regCNIC').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  
+  if (!name || !cnic || !email || !password) { alert('Please fill all fields'); return; }
+  
+  const users = JSON.parse(localStorage.getItem('users'));
+  if (users[email]) { alert('Email already registered'); return; }
+  
+  users[email] = { name, cnic, password, isAdmin: false };
+  localStorage.setItem('users', JSON.stringify(users));
+  alert('✅ Registration successful! Please login.');
+  toggleForm();
+  document.getElementById('loginEmail').focus();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  goPage('login');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+// ── NAVIGATION ──
+function goPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page + 'Page').classList.add('active');
+  document.getElementById('navbar').style.display = page === 'login' ? 'none' : 'flex';
+  
+  if (page === 'dashboard') updateDashboard();
+  if (page === 'features') renderFeatures();
+  if (page === 'complaints') loadComplaints();
+  if (page === 'services') loadServices();
+  if (page === 'tracking') loadTracking();
+}
+
+// ── FEATURES ──
+const features = [
+  { id:0, theme:0, color:"#00C97B", icon:"ti-user-plus", title:"User Registration & Login",
+    subs:[{icon:"ti-id", text:"Citizen account creation"},{icon:"ti-lock", text:"Secure login & logout"},{icon:"ti-key", text:"Forgot password flow"},{icon:"ti-fingerprint", text:"CNIC & email verification"}]},
+  { id:1, theme:1, color:"#F43F5E", icon:"ti-message-report", title:"Complaint Management", subs:[{icon:"ti-file-plus", text:"Submit complaints online"},{icon:"ti-category", text:"Select complaint category"},{icon:"ti-upload", text:"Upload images & documents"},{icon:"ti-radar", text:"Real-time status tracking"},{icon:"ti-history", text:"Full complaint history"}]},
+  { id:2, theme:2, color:"#06B6D4", icon:"ti-file-certificate", title:"Service Applications", subs:[{icon:"ti-home", text:"Domicile certificate"},{icon:"ti-baby-carriage", text:"Birth certificate"},{icon:"ti-grave-2", text:"Death certificate"},{icon:"ti-rings", text:"Marriage certificate"},{icon:"ti-car", text:"Driving license services"}]},
+  { id:3, theme:3, color:"#8B5CF6", icon:"ti-map-pin", title:"Real-Time Tracking", subs:[{icon:"ti-progress", text:"Application progress view"},{icon:"ti-activity", text:"Complaint progress view"},{icon:"ti-clock", text:"Estimated completion time"}]},
+  { id:4, theme:4, color:"#FFD166", icon:"ti-bell", title:"Notifications & Alerts", subs:[{icon:"ti-device-mobile", text:"SMS notifications"},{icon:"ti-mail", text:"Email notifications"},{icon:"ti-bell-ringing", text:"In-app alerts"},{icon:"ti-check", text:"Resolution updates"}]},
+  { id:5, theme:5, color:"#F97316", icon:"ti-layout-dashboard", title:"Dashboard", subs:[{icon:"ti-user", text:"Citizen dashboard"},{icon:"ti-shield", text:"Admin dashboard"},{icon:"ti-chart-bar", text:"Complaint statistics"},{icon:"ti-clipboard-list", text:"Service summaries"}]},
+  { id:6, theme:6, color:"#EC4899", icon:"ti-star", title:"Feedback & Rating", subs:[{icon:"ti-thumb-up", text:"Rate services"},{icon:"ti-message-circle", text:"Post-resolution feedback"},{icon:"ti-forms", text:"Satisfaction surveys"}]},
+  { id:7, theme:7, color:"#14B8A6", icon:"ti-files", title:"Document Management", subs:[{icon:"ti-upload", text:"Upload CNIC copies"},{icon:"ti-paperclip", text:"Upload supporting documents"},{icon:"ti-download", text:"Download submitted files"}]},
+  { id:8, theme:8, color:"#A78BFA", icon:"ti-search", title:"Search & Help Center", subs:[{icon:"ti-help-circle", text:"Frequently asked questions"},{icon:"ti-book", text:"Service guidance"},{icon:"ti-search", text:"Search government services"},{icon:"ti-question-mark", text:'"How do I?" section'}]},
+  { id:9, theme:9, color:"#FB923C", icon:"ti-settings", title:"Admin Panel", subs:[{icon:"ti-users", text:"Manage users"},{icon:"ti-clipboard", text:"Manage complaints"},{icon:"ti-building", text:"Assign departments"},{icon:"ti-report", text:"Generate reports"}]}
+];
+
+let activeFeature = null;
+
+function renderFeatures() {
+  const grid = document.getElementById('feature-grid');
+  grid.innerHTML = '';
+  features.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = `feature-card theme-${f.theme}${activeFeature === f.id ? ' active' : ''}`;
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.innerHTML = `
+      <div class="card-icon-wrap"><i class="ti ${f.icon}"></i></div>
+      <div class="card-title">${f.title}</div>
+      <div class="card-count">${f.subs.length} features</div>
+    `;
+    card.onclick = () => {
+      activeFeature = (activeFeature === f.id) ? null : f.id;
+      renderFeatures();
+      renderDetail();
+    };
+    grid.appendChild(card);
+  });
+}
+
+function renderDetail() {
+  const panel = document.getElementById('detail-panel');
+  if (activeFeature === null) {
+    panel.className = 'detail-panel';
+    panel.innerHTML = `<div class="empty-state"><i class="ti ti-hand-click"></i>Select any module above to explore its features</div>`;
+    return;
+  }
+  const f = features[activeFeature];
+  panel.className = 'detail-panel has-content';
+  panel.style.setProperty('--active-c', f.color);
+  panel.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-icon-wrap" style="background:color-mix(in srgb, ${f.color} 18%, transparent);color:${f.color};">
+        <i class="ti ${f.icon}"></i>
+      </div>
+      <div><div class="detail-title-text">${f.title}</div></div>
+      <div class="detail-count-pill" style="background:color-mix(in srgb, ${f.color} 15%, transparent);color:${f.color};">${f.subs.length} features</div>
+    </div>
+    <div class="sub-items">
+      ${f.subs.map(s => `<div class="sub-item"><i class="ti ${s.icon}" style="color:${f.color};"></i><span>${s.text}</span></div>`).join('')}
+    </div>
+  `;
+}
+
+// ── COMPLAINTS ──
+function submitComplaint() {
+  const category = document.getElementById('complaintCategory').value;
+  const title = document.getElementById('complaintTitle').value.trim();
+  const desc = document.getElementById('complaintDesc').value.trim();
+  const location = document.getElementById('complaintLocation').value.trim();
+  
+  if (category === 'Select Category' || !title || !desc) { alert('Please fill all fields'); return; }
+  
+  const complaint = {
+    id: Date.now(),
+    user: currentUser.email,
+    userName: currentUser.name,
+    category, title, desc, location,
+    status: 'Pending',
+    date: new Date().toLocaleDateString()
+  };
+  
+  const complaints = JSON.parse(localStorage.getItem('complaints'));
+  complaints.push(complaint);
+  localStorage.setItem('complaints', JSON.stringify(complaints));
+  
+  alert('✅ Complaint submitted successfully!');
+  document.getElementById('complaintCategory').value = 'Select Category';
+  document.getElementById('complaintTitle').value = '';
+  document.getElementById('complaintDesc').value = '';
+  document.getElementById('complaintLocation').value = '';
+  loadComplaints();
+  updateDashboard();
+}
+
+function loadComplaints() {
+  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
+  const html = complaints.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No complaints filed yet</p>' :
+    complaints.map(c => `
+      <div class="card-item">
+        <div class="card-content">
+          <div class="card-type">${c.category}</div>
+          <div class="card-title">${c.title}</div>
+          <div class="card-meta">${c.location} • ${c.date}</div>
+        </div>
+        <span class="status-badge status-${c.status.toLowerCase()}">${c.status}</span>
+      </div>
+    `).join('');
+  document.getElementById('complaintsList').innerHTML = html;
+}
+
+// ── SERVICES ──
+function submitService() {
+  const type = document.getElementById('serviceType').value;
+  const purpose = document.getElementById('servicePurpose').value.trim();
+  const priority = document.getElementById('servicePriority').value;
+  
+  if (type === 'Select Service' || !purpose) { alert('Please fill all fields'); return; }
+  
+  const service = {
+    id: Date.now(),
+    user: currentUser.email,
+    userName: currentUser.name,
+    type, purpose, priority,
+    status: 'Submitted',
+    date: new Date().toLocaleDateString()
+  };
+  
+  const services = JSON.parse(localStorage.getItem('services'));
+  services.push(service);
+  localStorage.setItem('services', JSON.stringify(services));
+  
+  alert('✅ Application submitted successfully!');
+  document.getElementById('serviceType').value = 'Select Service';
+  document.getElementById('servicePurpose').value = '';
+  loadServices();
+  updateDashboard();
+}
+
+function loadServices() {
+  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
+  const html = services.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No applications yet</p>' :
+    services.map(s => `
+      <div class="card-item">
+        <div class="card-content">
+          <div class="card-type">${s.type}</div>
+          <div class="card-title">${s.purpose}</div>
+          <div class="card-meta">Priority: ${s.priority} • ${s.date}</div>
+        </div>
+        <span class="status-badge status-approved">${s.status}</span>
+      </div>
+    `).join('');
+  document.getElementById('servicesList').innerHTML = html;
+}
+
+// ── TRACKING ──
+function loadTracking() {
+  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
+  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
+  const all = [...complaints.map(c => ({...c, type: 'complaint'})), ...services.map(s => ({...s, type: 'service'}))].sort((a, b) => b.id - a.id);
+  
+  const html = all.length === 0 ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No submissions to track</p>' :
+    all.map(item => `
+      <div class="card-item">
+        <div class="card-content">
+          <div class="card-type">${item.type === 'complaint' ? item.category : item.type}</div>
+          <div class="card-title">${item.type === 'complaint' ? item.title : item.purpose}</div>
+          <div class="card-meta">${item.date}</div>
+        </div>
+        <span class="status-badge status-${item.status.toLowerCase().replace(' ', '-')}" style="background: ${item.status === 'Pending' || item.status === 'Submitted' ? 'rgba(255,209,102,0.15)' : 'rgba(0,201,123,0.15)'}; color: ${item.status === 'Pending' || item.status === 'Submitted' ? 'var(--gold)' : 'var(--green)'};">${item.status}</span>
+      </div>
+    `).join('');
+  document.getElementById('trackingList').innerHTML = html;
+}
+
+// ── FEEDBACK ──
+function submitFeedback() {
+  const rating = document.getElementById('feedbackRating').value;
+  const text = document.getElementById('feedbackText').value.trim();
+  
+  if (!rating || !text) { alert('Please provide rating and feedback'); return; }
+  
+  alert('✅ Thank you for your feedback!');
+  document.getElementById('feedbackRating').value = '';
+  document.getElementById('feedbackText').value = '';
+  goPage('dashboard');
+}
+
+// ── DASHBOARD ──
+function updateDashboard() {
+  const complaints = JSON.parse(localStorage.getItem('complaints')).filter(c => c.user === currentUser.email);
+  const services = JSON.parse(localStorage.getItem('services')).filter(s => s.user === currentUser.email);
+  
+  document.getElementById('totalComplaints').innerText = complaints.length;
+  document.getElementById('totalApps').innerText = services.length;
+  document.getElementById('pendingCount').innerText = 
+    complaints.filter(c => c.status === 'Pending').length + 
+    services.filter(s => s.status === 'Submitted').length;
+  document.getElementById('approvedCount').innerText = 
+    complaints.filter(c => c.status === 'Resolved').length + 
+    services.filter(s => s.status === 'Approved').length;
+  
+  const recentComp = complaints.slice(-3).reverse().map(c => `
+    <div class="card-item">
+      <div class="card-content">
+        <div class="card-type">${c.category}</div>
+        <div class="card-title">${c.title}</div>
+      </div>
+      <span class="status-badge status-${c.status.toLowerCase()}">${c.status}</span>
+    </div>
+  `).join('') || '<p style="color: var(--muted); padding: 1rem 0;">No complaints yet</p>';
+  document.getElementById('recentComplaints').innerHTML = recentComp;
+  
+  const recentSvc = services.slice(-3).reverse().map(s => `
+    <div class="card-item">
+      <div class="card-content">
+        <div class="card-type">${s.type}</div>
+        <div class="card-title">${s.purpose}</div>
+      </div>
+      <span class="status-badge status-approved">${s.status}</span>
+    </div>
+  `).join('') || '<p style="color: var(--muted); padding: 1rem 0;">No applications yet</p>';
+  document.getElementById('recentServices').innerHTML = recentSvc;
+  
+  document.getElementById('currentUser').innerText = currentUser.name;
+}
+
+// ── INIT ──
+initData();
+const saved = localStorage.getItem('currentUser');
+if (saved) {
+  currentUser = JSON.parse(saved);
+  document.getElementById('navbar').style.display = 'flex';
+  goPage('dashboard');
+  renderFeatures();
+  updateDashboard();
+} else {
+  goPage('login');
+}
+</script>
+</body>
+</html>

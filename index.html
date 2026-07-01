@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -602,17 +603,16 @@
         
         <div class="form-group">
           <label class="form-label">Category</label>
-          <select class="form-select" id="complaintCategory">
-            <option>Select Category</option>
-            <option>Water Supply</option>
-            <option>Electricity</option>
-            <option>Roads & Infrastructure</option>
-            <option>Garbage Collection</option>
-            <option>Public Health</option>
-            <option>Other</option>
-          </select>
-        </div>
 
+<select class="form-select" id="complaintCategory">
+    <option value="">Select Category</option>
+    <option value="water">Water</option>
+    <option value="electricity">Electricity</option>
+    <option value="roads">Roads</option>
+    <option value="sanitation">Sanitation</option>
+    <option value="other">Other</option>
+</select>
+</div>
         <div class="form-group">
           <label class="form-label">Title</label>
           <input type="text" class="form-input" id="complaintTitle" placeholder="Brief title of complaint">
@@ -651,13 +651,13 @@
         <div class="form-group">
           <label class="form-label">Service Type</label>
           <select class="form-select" id="serviceType">
-            <option>Select Service</option>
-            <option>Domicile Certificate</option>
-            <option>Birth Certificate</option>
-            <option>Death Certificate</option>
-            <option>Marriage Certificate</option>
-            <option>Driving License</option>
-          </select>
+    <option value="">Select Service</option>
+    <option value="domicile">Domicile Certificate</option>
+    <option value="birth-certificate">Birth Certificate</option>
+    <option value="death-certificate">Death Certificate</option>
+    <option value="marriage-certificate">Marriage Certificate</option>
+    <option value="driving-license">Driving License</option>
+</select>
         </div>
 
         <div class="form-group">
@@ -714,6 +714,7 @@
 </div>
 
 <script>
+"use strict";
 // ── INIT DATA ──
 function initData() {
   if (!localStorage.getItem('users')) {
@@ -736,47 +737,44 @@ function toggleForm() {
   document.getElementById('loginForm').style.display = document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
   document.getElementById('registerForm').style.display = document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
 }
-
 async function login() {
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value;
-
-    if (!email || !password) {
-        alert("Please fill all fields");
-        return;
-    }
-
     try {
-        const response = await fetch(`${API_URL}/login`, {
+
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!email || !password) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
+            body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.message || "Invalid email or password");
+            alert(data.message || "Login failed");
             return;
         }
 
-        token = data.token;
-        localStorage.setItem("token", token);
-
+        localStorage.setItem("token", data.token);
         currentUser = data.user;
 
+        document.getElementById('navbar').style.display = 'flex';
+
         goPage("dashboard");
-        renderFeatures();
         updateDashboard();
+        renderFeatures();
 
     } catch (error) {
         console.error(error);
-        alert("Cannot connect to the backend.");
+        alert("Backend not reachable");
     }
 }
 
@@ -792,7 +790,7 @@ async function register() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -905,6 +903,8 @@ function renderDetail() {
 }
 
 // ── COMPLAINTS ──
+// ── COMPLAINTS ──
+
 async function submitComplaint() {
     const category = document.getElementById("complaintCategory").value;
     const title = document.getElementById("complaintTitle").value.trim();
@@ -920,14 +920,14 @@ async function submitComplaint() {
         const response = await fetch(`${API_URL}/complaints`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
             },
             body: JSON.stringify({
                 category,
                 title,
                 description,
-                location,
-                user: currentUser
+                location
             })
         });
 
@@ -953,21 +953,31 @@ async function submitComplaint() {
         alert("Cannot connect to backend.");
     }
 }
-
-async function loadComplaints() {
+ async function loadComplaints() {
     try {
-        const response = await fetch(`${API_URL}/complaints`);
+        const response = await fetch(`${API_URL}/complaints/my`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
 
         const complaints = await response.json();
 
+        if (!response.ok) {
+            alert(complaints.message || "Failed to load complaints");
+            return;
+        }
+
         const html = complaints.length === 0
-            ? '<p style="color: var(--muted); padding: 2rem 0; text-align: center;">No complaints found</p>'
+            ? '<p style="color: var(--muted); padding:2rem; text-align:center;">No complaints found.</p>'
             : complaints.map(c => `
                 <div class="card-item">
                     <div class="card-content">
                         <div class="card-type">${c.category}</div>
                         <div class="card-title">${c.title}</div>
-                        <div class="card-meta">${c.location} • ${new Date(c.createdAt).toLocaleDateString()}</div>
+                        <div class="card-meta">
+                            ${new Date(c.createdAt).toLocaleDateString()}
+                        </div>
                     </div>
                     <span class="status-badge">${c.status}</span>
                 </div>
@@ -979,92 +989,113 @@ async function loadComplaints() {
         console.error(err);
         alert("Cannot load complaints.");
     }
-}
+}       
 
-// ── SERVICES ──
+// ── SERVICE 
 async function submitService() {
-    const type = document.getElementById("serviceType").value;
+
+    const serviceType = document.getElementById("serviceType").value;
     const purpose = document.getElementById("servicePurpose").value.trim();
     const priority = document.getElementById("servicePriority").value;
 
-    if (type === "Select Service" || !purpose) {
+    if (!serviceType || !purpose) {
         alert("Please fill all fields");
         return;
     }
 
     try {
+
         const response = await fetch(`${API_URL}/services`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
             },
             body: JSON.stringify({
-                type,
+                serviceType,
                 purpose,
-                priority,
-                user: currentUser
+                priority
             })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.message || "Failed to submit application");
+            alert(data.message || "Failed to submit service");
             return;
         }
 
-        alert("Application submitted successfully!");
-
-        document.getElementById("serviceType").value = "Select Service";
-        document.getElementById("servicePurpose").value = "";
+        alert("Service submitted successfully");
 
         loadServices();
         updateDashboard();
 
     } catch (err) {
         console.error(err);
-        alert("Cannot connect to backend.");
+        alert("Cannot connect to backend");
     }
 }
 
 async function loadServices() {
     try {
-        const response = await fetch(`${API_URL}/services`);
+        const token = localStorage.getItem("token");
 
-        const services = await response.json();
+        const res = await fetch(`${API_URL}/services/my`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            },
+            cache: "no-store"
+        });
 
-        const html = services.length === 0
-            ? '<p style="color: var(--muted); padding:2rem;text-align:center;">No applications found</p>'
-            : services.map(service => `
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const services = await res.json();
+          
+
+        const container = document.getElementById("servicesList");
+        if (!container) return;
+
+        if (!Array.isArray(services)) {
+            container.innerHTML = "<p>No services found</p>";
+            return;
+        }
+
+        container.innerHTML = services.length === 0
+            ? "<p>No services found</p>"
+            : services.map(s => `
                 <div class="card-item">
                     <div class="card-content">
-                        <div class="card-type">${service.type}</div>
-                        <div class="card-title">${service.purpose}</div>
-                        <div class="card-meta">
-                            Priority: ${service.priority} •
-                            ${new Date(service.createdAt).toLocaleDateString()}
-                        </div>
+                        <div class="card-type">${s.serviceType || "Service"}</div>
+                        <div class="card-title">Application</div>
+                        <div class="card-meta">${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ""}</div>
                     </div>
-
-                    <span class="status-badge">
-                        ${service.status}
-                    </span>
+                    <span class="status-badge">${s.status || "pending"}</span>
                 </div>
             `).join("");
 
-        document.getElementById("servicesList").innerHTML = html;
-
     } catch (err) {
         console.error(err);
-        alert("Cannot load services.");
+        alert("Cannot load services");
     }
 }
 
 // ── TRACKING ──
 async function loadTracking() {
     try {
-        const complaintRes = await fetch(`${API_URL}/complaints`);
-        const serviceRes = await fetch(`${API_URL}/services`);
+        const complaintRes = await fetch(`${API_URL}/complaints/my`, {
+    headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+    }
+});
+
+const serviceRes = await fetch(`${API_URL}/services/my`, {
+    headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+    }
+});
 
         const complaints = await complaintRes.json();
         const services = await serviceRes.json();
@@ -1078,7 +1109,7 @@ async function loadTracking() {
             ...services.map(s => ({
                 ...s,
                 itemType: "Service",
-                title: s.purpose
+                title: s.serviceType
             }))
         ];
 
@@ -1122,10 +1153,25 @@ function submitFeedback() {
 }
 
 // ── DASHBOARD ──
+
 async function updateDashboard() {
     try {
-        const complaintRes = await fetch(`${API_URL}/complaints`);
-        const serviceRes = await fetch(`${API_URL}/services`);
+
+        const complaintRes = await fetch(`${API_URL}/complaints/my`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        const serviceRes = await fetch(`${API_URL}/services/my`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        if (!complaintRes.ok || !serviceRes.ok) {
+            throw new Error("Failed to load data");
+        }
 
         const complaints = await complaintRes.json();
         const services = await serviceRes.json();
@@ -1134,36 +1180,42 @@ async function updateDashboard() {
         document.getElementById("totalApps").innerText = services.length;
 
         document.getElementById("pendingCount").innerText =
-            complaints.filter(c => c.status === "Pending").length +
-            services.filter(s => s.status === "Submitted").length;
+            complaints.filter(c => c.status === "pending").length +
+            services.filter(s => s.status === "pending").length;
 
         document.getElementById("approvedCount").innerText =
-            complaints.filter(c => c.status === "Resolved").length +
-            services.filter(s => s.status === "Approved").length;
+            complaints.filter(c => c.status === "resolved").length +
+            services.filter(s => s.status === "approved").length;
 
         document.getElementById("recentComplaints").innerHTML =
-            complaints.slice(0, 3).map(c => `
-                <div class="card-item">
-                    <div class="card-content">
-                        <div class="card-type">${c.category}</div>
-                        <div class="card-title">${c.title}</div>
+            complaints.length === 0
+                ? "<p>No complaints found.</p>"
+                : complaints.slice(0, 3).map(c => `
+                    <div class="card-item">
+                        <div class="card-content">
+                            <div class="card-type">${c.category}</div>
+                            <div class="card-title">${c.title}</div>
+                        </div>
+                        <span class="status-badge">${c.status}</span>
                     </div>
-                    <span class="status-badge">${c.status}</span>
-                </div>
-            `).join("");
+                `).join("");
 
         document.getElementById("recentServices").innerHTML =
-            services.slice(0, 3).map(s => `
-                <div class="card-item">
-                    <div class="card-content">
-                        <div class="card-type">${s.type}</div>
-                        <div class="card-title">${s.purpose}</div>
+            services.length === 0
+                ? "<p>No services found.</p>"
+                : services.slice(0, 3).map(s => `
+                    <div class="card-item">
+                        <div class="card-content">
+                            <div class="card-type">${s.serviceType}</div>
+<div class="card-title">Service Application</div>
+                        </div>
+                        <span class="status-badge">${s.status}</span>
                     </div>
-                    <span class="status-badge">${s.status}</span>
-                </div>
-            `).join("");
+                `).join("");
 
-        document.getElementById("currentUser").innerText = currentUser.name;
+        if (currentUser) {
+            document.getElementById("currentUser").innerText = currentUser.name;
+        }
 
     } catch (err) {
         console.error(err);
